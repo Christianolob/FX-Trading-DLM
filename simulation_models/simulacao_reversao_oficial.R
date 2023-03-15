@@ -29,9 +29,9 @@ alfa_0 = 160
 # media constante
 theta_0 = 155
 
-sigma = 2
-# sigma_param_alfa = 2
-sigma_param_theta = 1
+sigma = 1.5
+sigma_param_alfa = 1
+# sigma_param_theta = 1
 
 # taxa de convergencia
 constante_k = 0.1
@@ -44,21 +44,21 @@ serie_preco_revert = c(alfa_0)
 for(linha in 2:linhas){
   # linha = 2
   
-  novo_theta = serie_theta[linha-1]+(sigma_param_theta^2)*erro_param_theta[linha]
-  # novo_theta = serie_theta[linha-1]
+  # novo_theta = serie_theta[linha-1]+(sigma_param_theta^2)*erro_param_theta[linha]
+  novo_theta = serie_theta[linha-1]
 
   # novo_alfa = serie_alfa[linha-1]+(serie_alfa[linha-1]-serie_alfa[linha-2])*novo_theta+(sigma_param_alfa^2)*erro_param_alfa[linha]
-  # novo_alfa = serie_alfa[linha-1]+constante_k*(theta_0-serie_alfa[linha-1])+(sigma_param_alfa^2)*erro_param_alfa[linha]
+  novo_alfa = serie_alfa[linha-1]+constante_k*(theta_0-serie_alfa[linha-1])+(sigma_param_alfa^2)*erro_param_alfa[linha]
   # novo_alfa = serie_alfa[linha-1]
   # novo_alfa = serie_alfa[linha-1]+(serie_alfa[linha-1]-serie_alfa[linha-1])*novo_theta
   
   # regressive_effect = c(regressive_effect,100*((serie_alfa[linha-1]-serie_alfa[linha-2])*novo_theta)/serie_alfa[linha-1])  
-  # novo_preco_revert = novo_alfa + (sigma^2)*erro[linha]
-  novo_preco_revert = serie_preco_revert[linha-1] +constante_k*(theta_0-serie_preco_revert[linha-1])+ (sigma^2)*erro[linha]
+  novo_preco_revert = novo_alfa + (sigma^2)*erro[linha]
+  # novo_preco_revert = serie_preco_revert[linha-1] +constante_k*(theta_0-serie_preco_revert[linha-1])+ (sigma^2)*erro[linha]
   # novo_preco_revert = novo_alfa
 
   # gera a serie do parametro
-  # serie_alfa = c(serie_alfa,novo_alfa)
+  serie_alfa = c(serie_alfa,novo_alfa)
   serie_theta = c(serie_theta,novo_theta)
   serie_preco_revert = c(serie_preco_revert,novo_preco_revert)
 }
@@ -66,8 +66,8 @@ for(linha in 2:linhas){
 windows()
 par(mfrow=c(2,1))
 plot(serie_preco_revert,type = "l")
-# lines(serie_theta,col="red")
-abline(h=theta_0,col="blue")
+lines(serie_alfa,col="red")
+abline(h=serie_theta,col="blue")
 abline(v=20, lty=2)
 abline(v=40, lty=2)
 abline(v=60, lty=2)
@@ -105,8 +105,8 @@ modelo_reversao <- stan(file = "simulacao_reversao_oficial.stan",
 toc()
 
 teste = summary(modelo_reversao)
-# vetor_params_alfa = teste$summary[1:100,1]
-vetor_params_theta = teste$summary[1:100,1]
+vetor_params_alfa = teste$summary[1:100,1]
+# vetor_params_theta = teste$summary[1:100,1]
 resumo = teste$c_summary
 # resumo[,1]
 
@@ -120,7 +120,8 @@ resumo = teste$c_summary
 
 par(mfrow=c(2,1))
 plot(serie_preco_revert,type = "l")
-lines(serie_theta,col="red")
+lines(serie_alfa,col="red")
+abline(h=serie_theta,col="blue")
 title("Simulated data:")
 abline(v=20, lty=2)
 abline(v=40, lty=2)

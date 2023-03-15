@@ -29,8 +29,8 @@ alfa_0 = 160
 # media constante
 theta_0 = 155
 
-sigma = 2
-# sigma_param_alfa = 2
+sigma = 1.5
+# sigma_param_alfa = 1
 sigma_param_theta = 1
 
 # taxa de convergencia
@@ -54,7 +54,7 @@ for(linha in 2:linhas){
   
   # regressive_effect = c(regressive_effect,100*((serie_alfa[linha-1]-serie_alfa[linha-2])*novo_theta)/serie_alfa[linha-1])  
   # novo_preco_revert = novo_alfa + (sigma^2)*erro[linha]
-  novo_preco_revert = serie_preco_revert[linha-1] +constante_k*(theta_0-serie_preco_revert[linha-1])+ (sigma^2)*erro[linha]
+  novo_preco_revert = serie_preco_revert[linha-1] +constante_k*(novo_theta-serie_preco_revert[linha-1])+ (sigma^2)*erro[linha]
   # novo_preco_revert = novo_alfa
 
   # gera a serie do parametro
@@ -67,7 +67,7 @@ windows()
 par(mfrow=c(2,1))
 plot(serie_preco_revert,type = "l")
 lines(serie_theta,col="red")
-# abline(h=theta_0,col="blue")
+# abline(h=serie_theta,col="blue")
 abline(v=20, lty=2)
 abline(v=40, lty=2)
 abline(v=60, lty=2)
@@ -97,7 +97,7 @@ print(mean(serie_preco_revert))
 iteracoes = 5000
 
 tic()
-modelo_reversao <- stan(file = "simulacao_reversao_oficial.stan",
+modelo_reversao <- stan(file = "simulacao_reversao_oficial_theta_dinamico.stan",
                      data = data_stan,
                      iter = iteracoes,
                      warmup = floor(iteracoes/2),
@@ -121,6 +121,7 @@ resumo = teste$c_summary
 par(mfrow=c(2,1))
 plot(serie_preco_revert,type = "l")
 lines(serie_theta,col="red")
+# abline(h=serie_theta,col="blue")
 title("Simulated data:")
 abline(v=20, lty=2)
 abline(v=40, lty=2)
@@ -129,23 +130,12 @@ abline(v=80, lty=2)
 plot(serie_preco_revert,type = "l")
 # lines(vetor_params_alfa,col="red")
 lines(vetor_params_theta,col="red")
-abline(h=resumo[101],col="blue")
+# abline(h=resumo[101],col="blue")
 title("Stan model output:")
 abline(v=20, lty=2)
 abline(v=40, lty=2)
 abline(v=60, lty=2)
 abline(v=80, lty=2)
-
-
-# windows()
-# par(mfrow=c(1,1))
-# plot(serie_theta,type = "l")
-# lines(vetor_params_theta,col="red")
-# title("Simulated data:")
-# abline(v=20, lty=2)
-# abline(v=40, lty=2)
-# abline(v=60, lty=2)
-# abline(v=80, lty=2)
 
 
 launch_shinystan(modelo_reversao)
