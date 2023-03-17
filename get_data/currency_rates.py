@@ -17,7 +17,7 @@ end_date = '2023-12-31'
 base_currency = 'EUR'
 target_currency = 'USD'
 
-g10 = ["JPY"]
+g10 = ["NZD"]
 # g10 = ["CAD","NOK","SEK","JPY"]
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -71,3 +71,5 @@ for currency in g10:
         file_path = os.path.join(script_dir, file_name)
         # Save the DataFrame to a CSV file
         df.to_csv(file_path, index=True)
+
+
