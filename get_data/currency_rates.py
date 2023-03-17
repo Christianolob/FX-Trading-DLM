@@ -17,7 +17,7 @@ end_date = '2023-12-31'
 base_currency = 'EUR'
 target_currency = 'USD'
 
-# g10 = ["EUR","GBP","AUD","NZD","USD","CAD","NOK","SEK","JPY"]
+g10 = ["JPY"]
 # g10 = ["CAD","NOK","SEK","JPY"]
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
