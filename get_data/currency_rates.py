@@ -9,15 +9,14 @@ import time
 c = CurrencyRates()
 
 # Define the start and end date for the data
-start_date = '2000-01-01'
+start_date = '2013-01-01'
 # end_date = '2022-12-31'
 end_date = '2023-12-31'
 
 # Define the base and target currencies
-base_currency = 'EUR'
 target_currency = 'USD'
 
-g10 = ["NZD"]
+g10 = ["SEK"]
 # g10 = ["CAD","NOK","SEK","JPY"]
 
 script_dir = os.path.dirname(os.path.abspath(__file__))

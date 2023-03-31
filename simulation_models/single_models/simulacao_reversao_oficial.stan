@@ -16,6 +16,8 @@ data {
   // real<lower=0> sigma;
   // real<lower=0> constante_k;
   // real<lower=0> sigma_param_alfa;
+  
+  // int<lower=1> N_new;
 }
 
 // The parameters accepted by the model. Our model
@@ -27,6 +29,8 @@ parameters {
    real<lower=0> sigma;
    real<lower=0> sigma_param_alfa;
    real<lower=0.1,upper=0.3> constante_k;
+   
+   // vector[N_new] alfa_new;
 }
 
 // The model to be estimated. We model the output
