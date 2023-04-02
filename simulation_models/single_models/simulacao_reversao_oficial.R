@@ -22,8 +22,10 @@ setwd(file.path(this.path(),".."))
 
 plota_tudo = FALSE
 
+model <- stan_model(file = 'simulacao_reversao_oficial.stan')
+
 tabelas_resultado = NULL
-for (iteracao_codigo in 1:100) {
+for (iteracao_codigo in 1:1000) {
 
   print(iteracao_codigo)
   
@@ -112,7 +114,7 @@ for (iteracao_codigo in 1:100) {
   iteracoes = 5000
   
   tic()
-  modelo_reversao <- stan(file = "simulacao_reversao_oficial.stan",
+  modelo_reversao <- sampling(object = model,
                        data = data_stan,
                        iter = iteracoes,
                        warmup = floor(iteracoes/2),
@@ -202,6 +204,15 @@ for (iteracao_codigo in 1:100) {
   toc()
   
 }
+
+tabelas_resultado = data.table(tabelas_resultado)
+
+tabelas_resultado[,sinal_trade := sign(forecast_1-ultimo_preco)]
+tabelas_resultado[,retorno_ativo := preco_1/ultimo_preco-1]                 
+
+tabelas_resultado[,retorno_strat :=retorno_ativo*sinal_trade]
+hit_ratio = nrow(tabelas_resultado[retorno_strat>0])/nrow(tabelas_resultado)
+
 
 # launch_shinystan(modelo_reversao)
 save.image(file='simulacao_reversao.RData')

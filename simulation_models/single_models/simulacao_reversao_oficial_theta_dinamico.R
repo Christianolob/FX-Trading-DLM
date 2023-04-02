@@ -23,8 +23,10 @@ setwd(file.path(this.path(),".."))
 plota_tudo = FALSE
 
 tabelas_resultado = NULL
-for (iteracao_codigo in 1:100) {
+for (iteracao_codigo in 1:1000) {
   # iteracao_codigo = 1
+  
+  print(iteracao_codigo)
   
   linhas = 100
   erro=rnorm(linhas)
