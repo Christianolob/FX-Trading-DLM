@@ -22,11 +22,15 @@ setwd(file.path(this.path(),".."))
 
 plota_tudo = FALSE
 
+model <- stan_model(file = 'simulacao_reversao_oficial_theta_dinamico.stan')
+
 tabelas_resultado = NULL
 for (iteracao_codigo in 1:1000) {
   # iteracao_codigo = 1
   
   print(iteracao_codigo)
+  
+  tic()
   
   linhas = 100
   erro=rnorm(linhas)
@@ -110,11 +114,11 @@ for (iteracao_codigo in 1:1000) {
   iteracoes = 5000
   
   tic()
-  modelo_reversao <- stan(file = "simulacao_reversao_oficial_theta_dinamico.stan",
-                       data = data_stan,
-                       iter = iteracoes,
-                       warmup = floor(iteracoes/2),
-                       control = list(stepsize = 0.00001))
+  modelo_reversao <- sampling(object = model,
+                              data = data_stan,
+                              iter = iteracoes,
+                              warmup = floor(iteracoes/2),
+                              control = list(stepsize = 0.00001))
   toc()
   
   ultimo_preco = serie_preco_revert[length(serie_preco_revert)-remocoes]
