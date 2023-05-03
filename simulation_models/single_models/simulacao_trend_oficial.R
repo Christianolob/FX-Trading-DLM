@@ -20,10 +20,21 @@ rstan_options(auto_write = TRUE)
 
 setwd(file.path(this.path(),".."))
 
-plota_tudo = FALSE
+plota_tudo = TRUE
+flag_theta_fixo = TRUE
+
+if (flag_theta_fixo) {
+  modelo_utilizado = 'simulacao_trend_oficial_theta_fixo'
+} else {
+  modelo_utilizado = 'simulacao_trend_oficial'
+}
+
+model <- stan_model(file = paste0(modelo_utilizado,".stan"))
+
+n_iteracoes = 1
 
 tabelas_resultado = NULL
-for (iteracao_codigo in 1:1000) {
+for (iteracao_codigo in 1:n_iteracoes) {
   # iteracao_codigo=1    
 
   print(iteracao_codigo)
@@ -34,7 +45,7 @@ for (iteracao_codigo in 1:1000) {
   erro_param_theta=rnorm(linhas)
   
   alfa_0 = 155
-  theta_0 = 0.5
+  theta_0 = 0.3
   
   remocoes=3
   
@@ -49,24 +60,24 @@ for (iteracao_codigo in 1:1000) {
   regressive_effect = c()
   
   proximo_alfa = function(alfa_anterior, alfa_anterior_anterior, novo_theta, sigma_param_alfa, erro){
-    novo_alfa = alfa_anterior+(alfa_anterior-alfa_anterior_anterior)*novo_theta+(sigma_param_alfa^2)*erro
+    novo_alfa = alfa_anterior+(alfa_anterior-alfa_anterior_anterior)*novo_theta+(sigma_param_alfa)*erro
     return(novo_alfa)
   }
   
   for(linha in 3:linhas){
     # linha = 2
     
-    # novo_theta = serie_theta[linha-1]*(1+(sigma_param_theta^2)*erro_param_theta[linha])
+    # novo_theta = serie_theta[linha-1]*(1+(sigma_param_theta)*erro_param_theta[linha])
     novo_theta = serie_theta[linha-1]
     
-    novo_alfa = serie_alfa[linha-1]+(serie_alfa[linha-1]-serie_alfa[linha-2])*novo_theta+(sigma_param_alfa^2)*erro_param_alfa[linha]
-    # novo_alfa = serie_alfa[linha-1]+(sigma_param_alfa^2)*erro_param_alfa[linha]
+    novo_alfa = serie_alfa[linha-1]+(serie_alfa[linha-1]-serie_alfa[linha-2])*novo_theta+(sigma_param_alfa)*erro_param_alfa[linha]
+    # novo_alfa = serie_alfa[linha-1]+(sigma_param_alfa)*erro_param_alfa[linha]
     # novo_alfa = serie_alfa[linha-1]
     # novo_alfa = serie_alfa[linha-1]+(serie_alfa[linha-1]-serie_alfa[linha-1])*novo_theta
     
     regressive_effect = c(regressive_effect,100*((serie_alfa[linha-1]-serie_alfa[linha-2])*novo_theta)/serie_alfa[linha-1])  
     
-    novo_preco_revert = novo_alfa + (sigma^2)*erro[linha]
+    novo_preco_revert = novo_alfa + (sigma)*erro[linha]
     # novo_preco_revert = novo_alfa
   
     # gera a serie do parametro
@@ -96,49 +107,51 @@ for (iteracao_codigo in 1:1000) {
   # Agora vamos estimar esse modelo com STAN
   
   # Vamos comecar com a vol da equacao de estados e de precos conhecido e constante
-  data_stan <- list(N = length(serie_preco)-remocoes,
-                    price = serie_preco[1:(length(serie_preco)-remocoes)]
-                    # ,sigma = sigma
-                    # ,sigma_param_alfa = sigma_param_alfa
-                    )
+  if (flag_theta_fixo) {
+    data_stan <- list(N = length(serie_preco)-remocoes,
+                      price = serie_preco[1:(length(serie_preco)-remocoes)]
+                      ,theta = theta_0
+                      # ,sigma_param_alfa = sigma_param_alfa
+    )
+  } else {
+    data_stan <- list(N = length(serie_preco)-remocoes,
+                      price = serie_preco[1:(length(serie_preco)-remocoes)]
+                      # ,sigma = sigma
+                      # ,sigma_param_alfa = sigma_param_alfa
+    )
+  }
   
   print(mean(serie_preco))
   
   iteracoes = 5000
-  
+
   tic()
-  modelo_trend <- stan(file = "simulacao_trend_oficial.stan",
-                       data = data_stan,
-                       iter = iteracoes,
-                       warmup = floor(iteracoes/2),
-                       control = list(stepsize = 0.00001))
+  modelo_trend <- sampling(object = model,
+                            data = data_stan,
+                            iter = iteracoes,
+                            warmup = floor(iteracoes/2),
+                            control = list(stepsize = 0.00001))
   toc()
+  
   
   resumo = summary(modelo_trend)
   tbl_parametros = resumo$summary
   rownames(tbl_parametros)
   
-  novo_theta = tbl_parametros["theta","mean"]
-  alfa_anterior = tbl_parametros["alfa[97]","mean"]
-  alfa_anterior_anterior = tbl_parametros["alfa[96]","mean"]
-  sigma_param_alfa = tbl_parametros["sigma_param_alfa","mean"]
-
-  forecast_1 = proximo_alfa(alfa_anterior = alfa_anterior,
-                            alfa_anterior_anterior = alfa_anterior_anterior,
-                            novo_theta = novo_theta,
-                            sigma_param_alfa = sigma_param_alfa,
-                            erro = 0)
-
-  forecast_2 = proximo_alfa(alfa_anterior = forecast_1,
-                            alfa_anterior_anterior = alfa_anterior,
-                            novo_theta = novo_theta,
-                            sigma_param_alfa = sigma_param_alfa,
-                            erro = 0)
+  if (flag_theta_fixo) {
+    theta_estimado = theta_0
+  } else {
+    theta_estimado = tbl_parametros["theta","mean"]
+  }
   
-  forecast_3 = proximo_alfa(alfa_anterior = forecast_2,
-                            alfa_anterior_anterior = forecast_1,
-                            novo_theta = novo_theta,
-                            sigma_param_alfa = sigma_param_alfa,
+  alfa_anterior_estimado = tbl_parametros["alfa[97]","mean"]
+  alfa_anterior_anterior_estimado = tbl_parametros["alfa[96]","mean"]
+  sigma_param_alfa_estimado = tbl_parametros["sigma_param_alfa","mean"]
+
+  forecast_1 = proximo_alfa(alfa_anterior = alfa_anterior_estimado,
+                            alfa_anterior_anterior = alfa_anterior_anterior_estimado,
+                            novo_theta = theta_estimado,
+                            sigma_param_alfa = sigma_param_alfa_estimado,
                             erro = 0)
   
   if (plota_tudo != FALSE){
@@ -162,17 +175,26 @@ for (iteracao_codigo in 1:1000) {
 
   ultimo_preco = serie_preco[length(serie_preco)-remocoes]
   preco_1 = serie_preco[length(serie_preco)-remocoes+1]
-  preco_2 = serie_preco[length(serie_preco)-remocoes+2]
-  preco_3 = serie_preco[length(serie_preco)-remocoes+3]
   
   tabelas_resultado_intermediario = NULL
   tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,ultimo_preco)
   tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,forecast_1)
-  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,forecast_2)
-  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,forecast_3)
   tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,preco_1)
-  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,preco_2)
-  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,preco_3)
+  
+  # comeca os parametros estimados
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,theta_estimado)
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,alfa_anterior_estimado)
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,alfa_anterior_anterior_estimado)
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,sigma_param_alfa_estimado)
+  
+  # os parametros reais
+  theta = serie_theta[97]
+  alfa_anterior = serie_alfa[97]
+  alfa_anterior_anterior = serie_alfa[96]
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,theta)
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,alfa_anterior)
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,alfa_anterior_anterior)
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,sigma_param_alfa)
   
   tabelas_resultado = rbind(tabelas_resultado,tabelas_resultado_intermediario)
   
@@ -180,7 +202,40 @@ for (iteracao_codigo in 1:1000) {
   
 }
 
-save.image(file='simulacao_trend_oficial.RData')
+save.image(file=paste0(modelo_utilizado,'.RData'))
 
-# launch_shinystan(modelo_trend)
+launch_shinystan(modelo_trend)
+
+tabelas_resultado_dt = data.table(tabelas_resultado)
+
+tabelas_resultado_dt[,erro_theta:=theta_estimado-theta]
+tabelas_resultado_dt[,erro_alfa_anterior:=alfa_anterior_estimado-alfa_anterior]
+tabelas_resultado_dt[,erro_alfa_anterior_anterior:=alfa_anterior_anterior_estimado-alfa_anterior_anterior]
+tabelas_resultado_dt[,erro_sigma_param_alfa:=sigma_param_alfa_estimado-sigma_param_alfa]
+
+# save.image(file='simulacao_trend_oficial.RData')
+# load('C:/Users/chris/Documents/FX-Trading-DLM/simulation_models/single_models/simulacao_trend_oficial.RData')
+
+media_erro_theta = NULL
+media_erro_alfa_anterior = NULL
+media_erro_alfa_anterior_anterior = NULL
+media_erro_sigma_param_alfa = NULL
+for(iteracao_codigo in 1:n_iteracoes){
+  media_erro_theta = c(media_erro_theta,sum(tabelas_resultado_dt$erro_theta[1:iteracao_codigo])/iteracao_codigo)
+  media_erro_alfa_anterior = c(media_erro_alfa_anterior,sum(tabelas_resultado_dt$erro_alfa_anterior[1:iteracao_codigo])/iteracao_codigo)
+  media_erro_alfa_anterior_anterior = c(media_erro_alfa_anterior_anterior,sum(tabelas_resultado_dt$erro_alfa_anterior_anterior[1:iteracao_codigo])/iteracao_codigo)
+  media_erro_sigma_param_alfa = c(media_erro_sigma_param_alfa,sum(tabelas_resultado_dt$erro_sigma_param_alfa[1:iteracao_codigo])/iteracao_codigo)
+}
+
+# setnames(tabelas_resultado,"V11","last_theta")
+
+par(mfrow=c(4,1))
+plot(media_erro_theta)
+abline(h=0,col="red")
+plot(media_erro_alfa_anterior)
+abline(h=0,col="red")
+plot(media_erro_alfa_anterior_anterior)
+abline(h=0,col="red")
+plot(media_erro_sigma_param_alfa)
+abline(h=0,col="red")
 

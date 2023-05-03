@@ -24,8 +24,13 @@ plota_tudo = FALSE
 
 model <- stan_model(file = 'simulacao_reversao_oficial_theta_dinamico.stan')
 
+n_iteracoes = 100
+
 tabelas_resultado = NULL
-for (iteracao_codigo in 1:1000) {
+media_erro_sigma_theta = NULL
+media_erro_last_theta = NULL
+media_erro_sigma = NULL
+for (iteracao_codigo in 1:n_iteracoes) {
   # iteracao_codigo = 1
   
   print(iteracao_codigo)
@@ -45,7 +50,7 @@ for (iteracao_codigo in 1:1000) {
   
   sigma = 1.5
   # sigma_param_alfa = 1
-  sigma_param_theta = 1
+  sigma_theta = 1
   
   # taxa de convergencia
   constante_k = 0.1
@@ -54,8 +59,8 @@ for (iteracao_codigo in 1:1000) {
   serie_theta = c(theta_0)
   serie_preco_revert = c(alfa_0)
   
-  proximo_theta = function(theta_anterior, sigma_param_theta, erro){
-    novo_theta = theta_anterior+(sigma_param_theta^2)*erro
+  proximo_theta = function(theta_anterior, sigma_theta, erro){
+    novo_theta = theta_anterior+(sigma_theta^2)*erro
     return(novo_theta)
   }
   proximo_preco = function(preco_anterior, constante_k, novo_theta, sigma, erro){
@@ -67,7 +72,7 @@ for (iteracao_codigo in 1:1000) {
   for(linha in 2:linhas){
     # linha = 2
     
-    novo_theta = proximo_theta(serie_theta[linha-1],sigma_param_theta,erro_param_theta[linha])
+    novo_theta = proximo_theta(serie_theta[linha-1],sigma_theta,erro_param_theta[linha])
     # novo_theta = serie_theta[linha-1]
   
     # novo_alfa = serie_alfa[linha-1]+(serie_alfa[linha-1]-serie_alfa[linha-2])*novo_theta+(sigma_param_alfa^2)*erro_param_alfa[linha]
@@ -103,10 +108,10 @@ for (iteracao_codigo in 1:1000) {
   # Vamos comecar com a vol da equacao de estados e de precos conhecido e constante
   data_stan <- list(N = length(serie_preco_revert)-remocoes,
                     price = serie_preco_revert[1:(length(serie_preco_revert)-remocoes)]
-                    ,sigma = sigma
+                    # ,sigma = sigma
                     # ,sigma_param_alfa = sigma_param_alfa
-                    ,sigma_param_theta = sigma_param_theta
-                    ,constante_k=constante_k
+                    # ,sigma_theta = sigma_theta
+                    # ,constante_k = constante_k
                     )
   
   print(mean(serie_preco_revert))
@@ -127,27 +132,15 @@ for (iteracao_codigo in 1:1000) {
   tbl_parametros = resumo$summary
   rownames(tbl_parametros)
 
-  sigma_theta = tbl_parametros["sigma_param_theta","mean"]
-  last_theta = tbl_parametros["theta[97]","mean"]
+  sigma_theta_estimado = tbl_parametros["sigma_theta","mean"]
+  last_theta_estimado = tbl_parametros["theta[97]","mean"]
   constante_k_estimado = tbl_parametros["constante_k","mean"]
-  sigma = tbl_parametros["sigma","mean"]
+  sigma_estimado = tbl_parametros["sigma","mean"]
   
   forecast_1 = proximo_preco(preco_anterior = ultimo_preco,
                              constante_k = constante_k_estimado,
-                             novo_theta = last_theta,
-                             sigma = sigma,
-                             erro = 0)
-  
-  forecast_2 = proximo_preco(preco_anterior = forecast_1,
-                             constante_k = constante_k_estimado,
-                             novo_theta = last_theta,
-                             sigma = sigma,
-                             erro = 0)
-  
-  forecast_3 = proximo_preco(preco_anterior = forecast_2,
-                             constante_k = constante_k_estimado,
-                             novo_theta = last_theta,
-                             sigma = sigma,
+                             novo_theta = last_theta_estimado,
+                             sigma = sigma_estimado,
                              erro = 0)
 
   if (plota_tudo != FALSE) {
@@ -173,25 +166,67 @@ for (iteracao_codigo in 1:1000) {
   
   ultimo_preco = serie_preco_revert[length(serie_preco_revert)-remocoes]
   preco_1 = serie_preco_revert[length(serie_preco_revert)-remocoes+1]
-  preco_2 = serie_preco_revert[length(serie_preco_revert)-remocoes+2]
-  preco_3 = serie_preco_revert[length(serie_preco_revert)-remocoes+3]
-  
+
   tabelas_resultado_intermediario = NULL
   tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,ultimo_preco)
   tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,forecast_1)
-  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,forecast_2)
-  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,forecast_3)
   tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,preco_1)
-  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,preco_2)
-  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,preco_3)
+  
+  # comeca os parametros estimados
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,sigma_theta_estimado)
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,constante_k_estimado)
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,sigma_estimado)
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,last_theta_estimado)
+
+  # os parametros reais  
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,sigma_theta)
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,constante_k)
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,sigma)
+  last_theta = serie_theta[97]
+  tabelas_resultado_intermediario = cbind(tabelas_resultado_intermediario,last_theta)
+  
   
   tabelas_resultado = rbind(tabelas_resultado,tabelas_resultado_intermediario)
-  
+
+  # par(mfrow=c(3,1))
+  # plot(media_erro_sigma_theta)
+  # abline(h=0,col="red")
+  # plot(media_erro_last_theta)
+  # abline(h=0,col="red")
+  # plot(media_erro_sigma)
+  # abline(h=0,col="red")
+
   toc()
   
 }
 
+tabelas_resultado_dt = data.table(tabelas_resultado)
+
+tabelas_resultado_dt[,erro_sigma_theta:=sigma_theta-sigma_theta_estimado]
+tabelas_resultado_dt[,erro_last_theta:=last_theta_estimado-last_theta]
+tabelas_resultado_dt[,erro_sigma:=sigma-sigma_estimado]
+tabelas_resultado_dt[,erro_constante_k:=constante_k-constante_k_estimado]
+
 save.image(file='simulacao_reversao_oficial_theta_dinamico.RData')
 
-# launch_shinystan(modelo_reversao)
+media_erro_sigma_theta = NULL
+media_erro_last_theta = NULL
+media_erro_sigma = NULL
+media_erro_constante_k = NULL
+for(iteracao_codigo in 1:n_iteracoes){
+  media_erro_sigma_theta = c(media_erro_sigma_theta,sum(tabelas_resultado_dt$erro_sigma_theta[1:iteracao_codigo])/iteracao_codigo)
+  media_erro_last_theta = c(media_erro_last_theta,sum(tabelas_resultado_dt$erro_last_theta[1:iteracao_codigo])/iteracao_codigo)
+  media_erro_sigma = c(media_erro_sigma,sum(tabelas_resultado_dt$erro_sigma[1:iteracao_codigo])/iteracao_codigo)
+  media_erro_constante_k = c(media_erro_constante_k,sum(tabelas_resultado_dt$erro_constante_k[1:iteracao_codigo])/iteracao_codigo)
+  }
+
+# setnames(tabelas_resultado,"V11","last_theta")
+
+par(mfrow=c(3,1))
+plot(media_erro_sigma_theta)
+abline(h=0,col="red")
+plot(media_erro_last_theta)
+abline(h=0,col="red")
+plot(media_erro_constante_k)
+abline(h=0,col="red")
 
