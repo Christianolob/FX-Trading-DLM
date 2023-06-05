@@ -20,8 +20,8 @@ rstan_options(auto_write = TRUE)
 
 setwd(file.path(this.path(),".."))
 
-plota_tudo = TRUE
-flag_theta_fixo = TRUE
+plota_tudo = FALSE
+flag_theta_fixo = FALSE
 
 if (flag_theta_fixo) {
   modelo_utilizado = 'simulacao_trend_oficial_theta_fixo'
@@ -45,7 +45,7 @@ for (iteracao_codigo in 1:n_iteracoes) {
   erro_param_theta=rnorm(linhas)
   
   alfa_0 = 155
-  theta_0 = 0.3
+  theta_0 = 0.4
   
   remocoes=3
   

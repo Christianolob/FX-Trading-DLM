@@ -13,7 +13,6 @@
 data {
   int<lower=1> N;
   vector[N] price;
-
 }
 
 // The parameters accepted by the model. Our model
@@ -21,22 +20,31 @@ data {
 parameters {
   // real alfa;
   vector[N] alfa;
-  // vector<lower=0,upper=1>[N] theta;
-  real<lower=0,upper=1> theta;
+  vector[N] theta;
+  // real<lower=0,upper=1> theta;
+  // real<lower=0,upper=1> theta;
   real<lower=0> sigma;
   real<lower=0> sigma_param_alfa;
+  real<lower=0> sigma_param_theta;
 }
 
 // The model to be estimated. We model the output
 // 'y' to be normally distributed with mean 'mu'
 // and standard deviation 'sigma'.
 model {
-  for (n in 3:N)
+  // priors
+  // theta ~ normal(0.2,0.1);
+  // theta ~ pareto(0.1,2);
+  // theta ~ exponential(1/0.2);
+  for (n in 2:N)
+    theta[n] ~ normal(theta[n-1],sigma_param_theta); // Colocar price[N] pega apenas o ultimo ponto  
+  for (n in 2:N)
     // alfa[n] ~ normal(alfa[n-1]+(alfa[n-1]-alfa[n-2])*theta[n],sigma_param_alfa); // Colocar price[N] pega apenas o ultimo ponto
-    alfa[n] ~ normal(alfa[n-1]+(alfa[n-1]-alfa[n-2])*theta,sigma_param_alfa); // Colocar price[N] pega apenas o ultimo ponto
+    alfa[n] ~ normal(alfa[n-1]+theta[n],sigma_param_alfa); // Colocar price[N] pega apenas o ultimo ponto
   for (n in 1:N)
     price[n] ~ normal(alfa[n],sigma); // Colocar price[N] pega apenas o ultimo ponto
   // for (n in 2:N)
   //   theta[n] ~ normal(theta[n-1],0.3); // Colocar price[N] pega apenas o ultimo ponto
 }
 
+// make sure Stan code ends with a blank line
