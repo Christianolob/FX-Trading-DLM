@@ -35,7 +35,7 @@ n_iteracoes = 1
 
 tabelas_resultado = NULL
 for (iteracao_codigo in 1:n_iteracoes) {
-  # iteracao_codigo=1    
+  iteracao_codigo=1
 
   print(iteracao_codigo)
   
@@ -133,6 +133,7 @@ for (iteracao_codigo in 1:n_iteracoes) {
                             control = list(stepsize = 0.00001))
   toc()
   
+  launch_shinystan(modelo_trend)
   
   resumo = summary(modelo_trend)
   tbl_parametros = resumo$summary
@@ -203,8 +204,6 @@ for (iteracao_codigo in 1:n_iteracoes) {
 }
 
 save.image(file=paste0(modelo_utilizado,'.RData'))
-
-launch_shinystan(modelo_trend)
 
 tabelas_resultado_dt = data.table(tabelas_resultado)
 

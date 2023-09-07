@@ -20,12 +20,13 @@ rstan_options(auto_write = TRUE)
 
 setwd(file.path(this.path(),".."))
 
-plota_tudo = FALSE
+plota_tudo = TRUE
 
 model <- stan_model(file = 'simulacao_reversao_oficial.stan')
 
 tabelas_resultado = NULL
 for (iteracao_codigo in 1:1000) {
+  iteracao_codigo=1
 
   print(iteracao_codigo)
   
@@ -36,18 +37,18 @@ for (iteracao_codigo in 1:1000) {
   erro_param_alfa=rnorm(linhas)
   erro_param_theta=rnorm(linhas)
   
-  alfa_0 = 160
+  alfa_0 = 1600
   # media constante
-  theta_0 = 155
+  theta_0 = 1550
   
-  sigma = 2
-  sigma_param_alfa = 1
+  sigma = 160
+  sigma_param_alfa = 80
   # sigma_param_theta = 1
   
   remocoes = 3
   
   # taxa de convergencia
-  constante_k = 0.1
+  constante_k = 0.05
   
   serie_alfa = c(alfa_0)
   serie_theta = c(theta_0)
@@ -111,15 +112,17 @@ for (iteracao_codigo in 1:1000) {
   
   print(mean(serie_preco_revert))
   
-  iteracoes = 5000
+  iteracoes = 2500
   
   tic()
   modelo_reversao <- sampling(object = model,
                        data = data_stan,
                        iter = iteracoes,
                        warmup = floor(iteracoes/2),
-                       control = list(stepsize = 0.00001))
+                       control = list(stepsize = 0.0001))
   toc()
+  
+  launch_shinystan(modelo_reversao)
   
   # Aqui comecamos a previsao
   resumo = summary(modelo_reversao)
@@ -136,7 +139,6 @@ for (iteracao_codigo in 1:1000) {
                 constante_k = constante_k_estimado,
                 sigma_param_alfa = sigma_estimado,
                 erro = 0)
-  
   
   forecast_2 = proximo_alpha(alpha_anterior = forecast_1,
                              theta = theta_estimado,

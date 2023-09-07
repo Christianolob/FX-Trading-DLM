@@ -32,9 +32,17 @@ parameters {
 // and standard deviation 'sigma'.
 model {
   // priors
-  // theta ~ normal(0.2,0.1);
+  // theta ~ beta(1,1);
   // theta ~ pareto(0.1,2);
   // theta ~ exponential(1/0.2);
+  // sigma_param_alfa ~ inv_gamma(0.001, 0.001);
+  // sigma ~ inv_gamma(0.001, 0.001);
+  // alfa ~ normal(1,1);
+  
+  // priors - all uniforms
+  sigma_param_alfa ~ uniform(0, 1000000000);
+  sigma ~ uniform(0, 1000000000);
+  alfa ~ uniform(-10000000,10000000);
   
   for (n in 3:N)
     // alfa[n] ~ normal(alfa[n-1]+(alfa[n-1]-alfa[n-2])*theta[n],sigma_param_alfa); // Colocar price[N] pega apenas o ultimo ponto

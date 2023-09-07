@@ -28,7 +28,7 @@ parameters {
    real<lower=0> theta_0;
    real<lower=0> sigma;
    real<lower=0> sigma_param_alfa;
-   real<lower=0.1,upper=0.3> constante_k;
+   real<lower=0> constante_k;
    
    // vector[N_new] alfa_new;
 }

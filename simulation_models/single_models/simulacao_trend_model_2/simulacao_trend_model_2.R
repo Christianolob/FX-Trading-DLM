@@ -14,6 +14,8 @@ library(shinystan)
 library(tictoc)
 # library(Rtool)
 
+source(file.path(this.path(),"..","..","..","..","funcoes_auxiliares.R"))
+
 # PARALELIZA
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
@@ -113,6 +115,9 @@ for (iteracao_codigo in 1:n_iteracoes) {
   
   # Vamos comecar com a vol da equacao de estados e de precos conhecido e constante
 
+  serie_theta_real = serie_theta[1:(length(serie_preco)-remocoes)]
+  serie_alfa_real = serie_alfa[1:(length(serie_preco)-remocoes)]
+  
   data_stan <- list(N = length(serie_preco)-remocoes,
                     price = serie_preco[1:(length(serie_preco)-remocoes)]
   )
@@ -135,6 +140,17 @@ for (iteracao_codigo in 1:n_iteracoes) {
   tbl_parametros = resumo$summary
   rownames(tbl_parametros)
 
+  # Aqui vamos plotar o grafico
+  cria_grafico_parametro(summary_stan_model=tbl_parametros,
+                         parameter_name = "theta",
+                         sigmas=2,
+                         true_mean=serie_theta_real)
+  
+  cria_grafico_parametro(summary_stan_model=tbl_parametros,
+                         parameter_name = "alfa",
+                         true_mean=serie_alfa_real)
+  
+  
   theta_anterior_estimado = tbl_parametros["theta[97]","mean"]
   alfa_anterior_estimado = tbl_parametros["alfa[97]","mean"]
   sigma_param_alfa_estimado = tbl_parametros["sigma_param_alfa","mean"]
@@ -145,6 +161,9 @@ for (iteracao_codigo in 1:n_iteracoes) {
                             sigma_param_alfa = sigma_param_alfa_estimado,
                             erro = 0)
 
+  
+  # tbl_parametros["alfa[50]","sd"]
+  
 #   if (plota_tudo != FALSE){
 #     par(mfrow=c(2,1))
 #     plot(serie_preco,type = "l")
