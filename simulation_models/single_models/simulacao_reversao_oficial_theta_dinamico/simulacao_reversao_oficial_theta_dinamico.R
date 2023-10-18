@@ -31,7 +31,7 @@ media_erro_sigma_theta = NULL
 media_erro_last_theta = NULL
 media_erro_sigma = NULL
 for (iteracao_codigo in 1:n_iteracoes) {
-  # iteracao_codigo = 1
+  iteracao_codigo = 1
   
   print(iteracao_codigo)
   
@@ -125,6 +125,8 @@ for (iteracao_codigo in 1:n_iteracoes) {
                               warmup = floor(iteracoes/2),
                               control = list(stepsize = 0.00001))
   toc()
+  
+  launch_shinystan(modelo_reversao)
   
   ultimo_preco = serie_preco_revert[length(serie_preco_revert)-remocoes]
   
