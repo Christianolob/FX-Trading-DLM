@@ -35,7 +35,7 @@ n_iteracoes = 1
 
 tabelas_resultado = NULL
 for (iteracao_codigo in 1:n_iteracoes) {
-  # iteracao_codigo=1    
+  iteracao_codigo=1
 
   print(iteracao_codigo)
   
@@ -126,13 +126,22 @@ for (iteracao_codigo in 1:n_iteracoes) {
   iteracoes = 5000
 
   tic()
+  
+  # Parece que setar o valor inicial para valores mais factíveis nos
+  #trara convergencia do modelo.
+  # init_fun = function(...) list(sigma_param_alfa=1, sigma=1, alfa=150)
+  # init_values = list(sigma_param_alfa=1, sigma=1, theta = 0.5)
+  
   modelo_trend <- sampling(object = model,
                             data = data_stan,
                             iter = iteracoes,
                             warmup = floor(iteracoes/2),
-                            control = list(stepsize = 0.00001))
+                            control = list(stepsize = 0.00001)
+                           # ,init = init_values
+                           )
   toc()
   
+  launch_shinystan(modelo_trend)
   
   resumo = summary(modelo_trend)
   tbl_parametros = resumo$summary
@@ -203,8 +212,6 @@ for (iteracao_codigo in 1:n_iteracoes) {
 }
 
 save.image(file=paste0(modelo_utilizado,'.RData'))
-
-launch_shinystan(modelo_trend)
 
 tabelas_resultado_dt = data.table(tabelas_resultado)
 

@@ -20,12 +20,10 @@ data {
 parameters {
   // real alfa;
   vector[N] alfa;
-  vector[N] theta;
   // real<lower=0,upper=1> theta;
   // real<lower=0,upper=1> theta;
   real<lower=0> sigma;
   real<lower=0> sigma_param_alfa;
-  real<lower=0> sigma_param_theta;
 }
 
 // The model to be estimated. We model the output
@@ -33,21 +31,17 @@ parameters {
 // and standard deviation 'sigma'.
 model {
   // priors
-  theta ~ normal(0,10);
   // theta ~ pareto(0.1,2);
   // theta ~ exponential(1/0.2);
   alfa ~ normal(155,100);
   sigma ~ cauchy(0, 25);
   sigma_param_alfa ~ cauchy(0, 25);
-  sigma_param_theta ~ cauchy(0, 5);
-  
-  for (n in 2:N)
-    theta[n] ~ normal(theta[n-1],sigma_param_theta); // Colocar price[N] pega apenas o ultimo ponto  
+
   for (n in 2:N)
     // alfa[n] ~ normal(alfa[n-1]+(alfa[n-1]-alfa[n-2])*theta[n],sigma_param_alfa); // Colocar price[N] pega apenas o ultimo ponto
-    alfa[n] ~ normal(alfa[n-1]+theta[n],sigma_param_alfa); // Colocar price[N] pega apenas o ultimo ponto
-  for (n in 1:N)
-    price[n] ~ normal(alfa[n],sigma); // Colocar price[N] pega apenas o ultimo ponto
+    alfa[n] ~ normal(alfa[n-1],sigma_param_alfa); // Colocar price[N] pega apenas o ultimo ponto
+  for (n in 2:N)
+    price[n] ~ normal(price[n-1] + alfa[n],sigma); // Colocar price[N] pega apenas o ultimo ponto
   // for (n in 2:N)
   //   theta[n] ~ normal(theta[n-1],0.3); // Colocar price[N] pega apenas o ultimo ponto
 }

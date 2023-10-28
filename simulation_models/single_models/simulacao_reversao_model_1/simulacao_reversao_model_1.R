@@ -22,7 +22,8 @@ setwd(file.path(this.path(),".."))
 
 plota_tudo = FALSE
 
-model <- stan_model(file = 'simulacao_reversao_oficial_theta_dinamico.stan')
+path_model = "C:/Users/chris/Documents/dissertacao/FX-Trading-DLM/simulation_models/single_models/simulacao_reversao_model_1/simulacao_reversao_model_1.stan"
+model <- stan_model(file = path_model)
 
 n_iteracoes = 100
 
@@ -31,7 +32,7 @@ media_erro_sigma_theta = NULL
 media_erro_last_theta = NULL
 media_erro_sigma = NULL
 for (iteracao_codigo in 1:n_iteracoes) {
-  # iteracao_codigo = 1
+  iteracao_codigo = 1
   
   print(iteracao_codigo)
   
@@ -125,6 +126,8 @@ for (iteracao_codigo in 1:n_iteracoes) {
                               warmup = floor(iteracoes/2),
                               control = list(stepsize = 0.00001))
   toc()
+  
+  launch_shinystan(modelo_reversao)
   
   ultimo_preco = serie_preco_revert[length(serie_preco_revert)-remocoes]
   

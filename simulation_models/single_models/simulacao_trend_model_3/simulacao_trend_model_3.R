@@ -25,7 +25,7 @@ setwd(file.path(this.path(),".."))
 plota_tudo = TRUE
 flag_theta_fixo = FALSE
 
-modelo_utilizado = 'simulacao_trend_model_2'
+modelo_utilizado = 'simulacao_trend_model_3'
 
 print("compilando o modelo")
 tic()
@@ -55,21 +55,21 @@ for (iteracao_codigo in 1:n_iteracoes) {
   sigma_param_theta = 0.1
   
   serie_alfa = c(alfa_0,alfa_0)
-  serie_theta = c(theta_0,theta_0)
+  # serie_theta = c(theta_0,theta_0)
   serie_preco = c(alfa_0,alfa_0)
   
   regressive_effect = c()
   
-  proximo_alfa = function(alfa_anterior, novo_theta, sigma_param_alfa, erro){
-    novo_alfa = alfa_anterior+novo_theta+(sigma_param_alfa)*erro
+  proximo_alfa = function(alfa_anterior, sigma_param_alfa, erro){
+    novo_alfa = alfa_anterior+(sigma_param_alfa)*erro
     return(novo_alfa)
   }
-  proximo_theta = function(theta_anterior, sigma_param_theta, erro){
-    novo_theta = theta_anterior+(sigma_param_theta)*erro
-    return(novo_theta)
-  }
+  # proximo_theta = function(theta_anterior, sigma_param_theta, erro){
+  #   novo_theta = theta_anterior+(sigma_param_theta)*erro
+  #   return(novo_theta)
+  # }
   
-  for(linha in 3:linhas){
+  for(linha in 2:linhas){
     # linha = 2
     
     # novo_theta = serie_theta[linha-1]*(1+(sigma_param_theta)*erro_param_theta[linha])
@@ -78,23 +78,22 @@ for (iteracao_codigo in 1:n_iteracoes) {
                                erro = erro_param_theta[linha])
 
     novo_alfa = proximo_alfa(alfa_anterior = serie_alfa[linha-1],
-                             novo_theta = novo_theta,
                              sigma_param_alfa = sigma_param_alfa,
                              erro = erro_param_alfa[linha])
 
-    novo_preco = novo_alfa + (sigma)*erro[linha]
+    novo_preco = novo_preco[linha-1] + novo_alfa[linha] + (sigma)*erro[linha]
     # novo_preco_revert = novo_alfa
   
     # gera a serie do parametro
     serie_alfa = c(serie_alfa,novo_alfa)
-    serie_theta = c(serie_theta,novo_theta)
+    # serie_theta = c(serie_theta,novo_theta)
     serie_preco = c(serie_preco,novo_preco)
   }
   
   if (plota_tudo != FALSE){
     windows()
     par(mfrow=c(2,1))
-    plot(serie_theta,type = "l")
+    # plot(serie_theta,type = "l")
     abline(h=0, lty=2)
     plot(serie_preco,type = "l")
     lines(serie_alfa,col="red")
@@ -115,7 +114,7 @@ for (iteracao_codigo in 1:n_iteracoes) {
   
   # Vamos comecar com a vol da equacao de estados e de precos conhecido e constante
 
-  serie_theta_real = serie_theta[1:(length(serie_preco)-remocoes)]
+  # serie_theta_real = serie_theta[1:(length(serie_preco)-remocoes)]
   serie_alfa_real = serie_alfa[1:(length(serie_preco)-remocoes)]
   
   data_stan <- list(N = length(serie_preco)-remocoes,
@@ -141,10 +140,10 @@ for (iteracao_codigo in 1:n_iteracoes) {
   rownames(tbl_parametros)
 
   # Aqui vamos plotar o grafico
-  cria_grafico_parametro(summary_stan_model=tbl_parametros,
-                         parameter_name = "theta",
-                         sigmas=2,
-                         true_mean=serie_theta_real)
+  # cria_grafico_parametro(summary_stan_model=tbl_parametros,
+  #                        parameter_name = "theta",
+  #                        sigmas=2,
+  #                        true_mean=serie_theta_real)
   
   cria_grafico_parametro(summary_stan_model=tbl_parametros,
                          parameter_name = "alfa",
